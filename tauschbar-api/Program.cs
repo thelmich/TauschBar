@@ -19,32 +19,43 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// seed test data
+Seed.Init(app); // <- hier einfügen
 
 app.MapGet("/", () => "TauschBar API läuft!");
-/*
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-*/
 
+
+app.MapGet("/api/offers", async (AppDbContext db) =>
+    await db.Offers
+        .Select(o => new {
+            o.Id,
+            o.Title,
+            o.Description,
+            o.Type,
+            o.CreatedAt,
+            User = new {
+                o.User!.Username,
+                o.User.Email
+            }
+        })
+        .ToListAsync()
+);
+
+app.MapGet("/api/offers/{id}", async (Guid id, AppDbContext db) =>
+    await db.Offers
+        .Select(o => new {
+            o.Id,
+            o.Title,
+            o.Description,
+            o.Type,
+            o.CreatedAt,
+            User = new {
+                o.User!.Username,
+                o.User.Email
+            }
+        }).FirstOrDefaultAsync(o => o.Id == id)
+);
+
+// run app
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
